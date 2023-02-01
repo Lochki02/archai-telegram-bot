@@ -1,7 +1,10 @@
 require('dotenv').config();
-const { Telegraf } = require('telegraf');
+//const { Telegraf } = require('telegraf');
+const { Composer } = require('micro-bot')
 const { TELEGRAM_BOT_TOKEN } = process.env
-const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
+//const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
+const bot = new Composer
+
 const { filterSentence, queryKeywords, queryString, askChatGPT, structureDoc, sendToDb } = require("./utils")
 
 class TemporaryObject{
