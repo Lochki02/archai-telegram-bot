@@ -25,7 +25,7 @@ let tempArray = []
 
 bot.command('start', async (ctx) => {
     ctx.telegram.sendMessage(ctx.chat.id, `
-    Hi, ${ctx.update.message.from.id}!
+    Hi, ${ctx.update.message.from.username ? ctx.update.message.from.username : "User"}!
 
     I'm an AI bot, powered by @AiArchiveERC.
     Join in on archiving the AI mind.
