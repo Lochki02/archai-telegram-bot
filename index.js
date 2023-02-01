@@ -157,4 +157,5 @@ bot.action("reset", (ctx) =>{
     tempArray = tempArray.filter((obj) => obj.chat != obj.chat)
 })
 
-bot.launch()
+//bot.launch()
+module.exports = bot
