@@ -135,6 +135,7 @@ bot.action("push_data", async(ctx) =>{
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Processing your push...")
     let filteredAnswers = tempArray.filter((obj) => obj.chat == ctx.chat.id)
     let tempObj = filteredAnswers[filteredAnswers.length - 1];
+    tempArray = tempArray.filter((obj) => obj.chat != obj.chat)
     
     if(tempObj){
         let doc = structureDoc("pushRequests")
