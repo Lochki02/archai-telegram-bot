@@ -169,6 +169,7 @@ bot.action("reset", (ctx) =>{
     tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
 
     if(tempObj){
+
         try{
             let doc = structureDoc("pushRequests")
             sendToDb(doc, {
