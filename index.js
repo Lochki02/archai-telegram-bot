@@ -164,7 +164,20 @@ bot.action("push_data", async(ctx) =>{
 })
 
 bot.action("reset", (ctx) =>{
+    let filteredAnswers = tempArray.filter((obj) => obj.user == ctx.from.id)
+    let tempObj = filteredAnswers[filteredAnswers.length - 1];
     tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
+
+    if(tempObj){
+        let doc = structureDoc("pushRequests")
+        sendToDb(doc, {
+            answer: tempObj.answer,
+            question: tempObj.question,
+            username: tempObj.username ? tempObj.username : "Anonymous",
+            state: -1,
+            date: Date.now()
+        })
+    }
 })
 
 //bot.launch()
