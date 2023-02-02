@@ -82,7 +82,7 @@ bot.command('ask', async (ctx) => {
 
                 ctx.telegram.sendMessage(
                     chatID, 
-                    `*${ctx.from.username ? ctx.from.username : "User"}:* /ask ${question}\n\n${answer}\n\n[ArchAI](https://AiArchive.io) | [Chart](${dexToolsLink}) | [Buy](${uniswapLink})`,
+                    `${answer}\n\n[ArchAI](https://AiArchive.io) | [Chart](${dexToolsLink}) | [Buy](${uniswapLink})`,
                     { 
                         parse_mode: "Markdown", 
                         disable_web_page_preview: true,
@@ -91,11 +91,11 @@ bot.command('ask', async (ctx) => {
                             inline_keyboard:[
                                 [
                                     {
-                                        text: "Push",
+                                        text: "✅ Push",
                                         callback_data: "push_data"
                                     },
                                     {
-                                        text: "Don't",
+                                        text: "❗❗ Don't",
                                         callback_data: "reset"
                                     }
                                 ]
