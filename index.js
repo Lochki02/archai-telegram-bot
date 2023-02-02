@@ -169,15 +169,20 @@ bot.action("reset", (ctx) =>{
     tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
 
     if(tempObj){
-        let doc = structureDoc("pushRequests")
-        sendToDb(doc, {
-            answer: tempObj.answer,
-            question: tempObj.question,
-            username: tempObj.username ? tempObj.username : "Anonymous",
-            state: -1,
-            date: Date.now()
-        })
+        try{
+            let doc = structureDoc("pushRequests")
+            sendToDb(doc, {
+                answer: tempObj.answer,
+                question: tempObj.question,
+                username: tempObj.username ? tempObj.username : "Anonymous",
+                state: -1,
+                date: Date.now()
+            })
+        } catch(err){
+            console.log("Sending obj is having troubles")
+        }
     }
+    else console.log("Temp obj is having troubles")
 })
 
 //bot.launch()
