@@ -82,33 +82,27 @@ bot.command('ask', async (ctx) => {
 
                 ctx.telegram.sendMessage(
                     chatID, 
-                    `*${ctx.from.username ? ctx.from.username : "User"}:* /ask ${question}\n\n*Answer*\n${answer}\n\n[ArchAI](https://AiArchive.io) | [Chart](${dexToolsLink}) | [Buy](${uniswapLink})`,
+                    `*${ctx.from.username ? ctx.from.username : "User"}:* /ask ${question}\n\n${answer}\n\n[ArchAI](https://AiArchive.io) | [Chart](${dexToolsLink}) | [Buy](${uniswapLink})`,
                     { 
                         parse_mode: "Markdown", 
-                        disable_web_page_preview: true 
-                    }
-                ).then((msg) =>{
-                    ctx.telegram.sendMessage(chatID,`
-                    If you are happy with the answer recieved from ArchAIBot please consider helping us by requesting a push to add this data to the database
-                        `,
-                        {
-                            reply_markup:{
-                                inline_keyboard:[
-                                    [
-                                        {
-                                            text: "Push",
-                                            callback_data: "push_data"
-                                        },
-                                        {
-                                            text: "Don't",
-                                            callback_data: "reset"
-                                        }
-                                    ]
+                        disable_web_page_preview: true,
+                        reply_to_message_id: ctx.message.message_id,
+                        reply_markup:{
+                            inline_keyboard:[
+                                [
+                                    {
+                                        text: "Push",
+                                        callback_data: "push_data"
+                                    },
+                                    {
+                                        text: "Don't",
+                                        callback_data: "reset"
+                                    }
                                 ]
-                            }
+                            ]
                         }
-                    )
-                })
+                    }
+                )
             }
         }
         else ctx.telegram.sendMessage(chatID, "Wrong usage => */ask <replace with your question>*", { parse_mode: "Markdown" })
