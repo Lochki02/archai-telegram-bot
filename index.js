@@ -95,7 +95,7 @@ bot.command('ask', async (ctx) => {
                                         callback_data: "push_data"
                                     },
                                     {
-                                        text: "❗❗ Don't",
+                                        text: "❗ Don't",
                                         callback_data: "reset"
                                     }
                                 ]
