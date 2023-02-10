@@ -189,4 +189,4 @@ bot.action("reset", (ctx) =>{
 })
 
 //bot.launch()
-export { bot }
+export default bot
