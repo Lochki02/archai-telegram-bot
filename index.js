@@ -1,11 +1,13 @@
-require('dotenv').config();
 //const { Telegraf } = require('telegraf');
-const { Composer } = require('micro-bot')
-const { BOT_TOKEN } = process.env
+//const { Composer } = require('micro-bot')
+import { Composer } from "micro-bot"
+
 //const bot = new Telegraf(BOT_TOKEN);
 const bot = new Composer
 const dexToolsLink = "https://www.dextools.io/app/en/ether/pair-explorer/0x94ce5a0677e32584a672fa28a6dcb63b53b8196f"
 const uniswapLink = "https://app.uniswap.org/#/swap?inputCurrency=0x5c8190b76e90b4dd0702740cf6eb0f7ee01ab5e9&outputCurrency=ETH"
+require('dotenv').config();
+const { BOT_TOKEN } = process.env
 
 const { filterSentence, queryKeywords, queryString, askChatGPT, structureDoc, sendToDb } = require("./utils")
 
@@ -187,4 +189,4 @@ bot.action("reset", (ctx) =>{
 })
 
 //bot.launch()
-module.exports = bot
+export default bot
