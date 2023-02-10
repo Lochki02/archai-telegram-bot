@@ -1,14 +1,18 @@
+require('dotenv').config();
 //const { Telegraf } = require('telegraf');
 const { Composer } = require('micro-bot')
-
+const fetch = (url, method, body) => import('node-fetch').then(({default: fetch}) => fetch(url, {
+    method: method,
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+}));
+const { BOT_TOKEN } = process.env
 //const bot = new Telegraf(BOT_TOKEN);
 const bot = new Composer
 const dexToolsLink = "https://www.dextools.io/app/en/ether/pair-explorer/0x94ce5a0677e32584a672fa28a6dcb63b53b8196f"
 const uniswapLink = "https://app.uniswap.org/#/swap?inputCurrency=0x5c8190b76e90b4dd0702740cf6eb0f7ee01ab5e9&outputCurrency=ETH"
-require('dotenv').config();
-const { BOT_TOKEN } = process.env
-
-const { filterSentence, queryKeywords, queryString, askChatGPT, structureDoc, sendToDb } = require("./utils")
 
 class TemporaryObject{
     question = ""
@@ -69,8 +73,12 @@ bot.command('ask', async (ctx) => {
         const question = ctx.message.text.substring(5);
 
         if(question != "") {
-            let answer = await askChatGPT(question, "text-davinci-003")
+            let req = await fetch(`https://archai-api.vercel.app/user/chatgpt`, "POST",{
+                question: question
+            })
 
+            let res = await req.json()
+            const answer = res.result
             if(!answer){
                 ctx.telegram.sendMessage(chatID, "Something went wrong")
             }
@@ -121,19 +129,25 @@ bot.command('archive', async (ctx) => {
     try{
         const question = ctx.message.text.substring(5);
 
-        let answer = await queryString("queries", question)
-        if(!answer){
-            let keywords = filterSentence(question)
-            //console.log(keywords)
-            answer = await queryKeywords("queries", keywords, question)
-        }
+        let req = await fetch(`https://archai-api.vercel.app/user/search`, "POST", {
+            question: question
+        })
         
-        for (let i = 0; i < answer.length; i++) {
-            ctx.telegram.sendMessage(chatID, answer[i].answer)
+        let res = await req.json()
+    
+        let data = res.result
+    
+        if(data){
+            if(data.length == 0) ctx.telegram.sendMessage(chatID, "No results were found")
+            else{
+                for (let i = 0; i < data.length; i++) {
+                    ctx.telegram.sendMessage(chatID, data[i].answer)
+                }
+            }
         }
+        else ctx.telegram.sendMessage(chatID, "Something went wrong")
 
         ctx.telegram.deleteMessage(chatID, tempReply.message_id)
-        if(answer.length == 0) ctx.telegram.sendMessage(chatID, "No results were found")
     }
     catch(err){
         console.log(err)
@@ -148,23 +162,22 @@ bot.action("push_data", async(ctx) =>{
     tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
     
     if(tempObj){
-        let doc = structureDoc("pushRequests")
-        sendToDb(doc, {
-            answer: tempObj.answer,
+        let req = await fetch(`https://archai-api.vercel.app/user/request`, "POST", {
             question: tempObj.question,
-            username: tempObj.username ? tempObj.username : "Anonymous",
-            state: 0,
-            date: Date.now()
+            answer: tempObj.answer,
+            username: tempObj.username
         })
+        let res = await req.json()
 
-        ctx.telegram.sendMessage(ctx.chat.id, "Push was successful and will be reviewed by admins")
+        if(res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
+        else ctx.telegram.sendMessage(ctx.chat.id, "Push was successful and will be reviewed by admins")
     }
     else ctx.telegram.sendMessage(ctx.chat.id, "This push has expired")
 
     ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
 })
 
-bot.action("reset", (ctx) =>{
+bot.action("reset", async(ctx) =>{
     let filteredAnswers = tempArray.filter((obj) => obj.user == ctx.from.id)
     let tempObj = filteredAnswers[filteredAnswers.length - 1];
     tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
@@ -172,14 +185,14 @@ bot.action("reset", (ctx) =>{
     if(tempObj){
 
         try{
-            let doc = structureDoc("pushRequests")
-            sendToDb(doc, {
-                answer: tempObj.answer,
+            let req = await fetch(`https://archai-api.vercel.app/user/reject`, "POST", {
                 question: tempObj.question,
-                username: tempObj.username ? tempObj.username : "Anonymous",
-                state: -1,
-                date: Date.now()
+                answer: tempObj.answer,
+                username: tempObj.username
             })
+            let res = await req.json()
+
+            if(res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
         } catch(err){
             console.log("Sending obj is having troubles")
         }
