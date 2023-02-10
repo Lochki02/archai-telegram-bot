@@ -1,6 +1,5 @@
 //const { Telegraf } = require('telegraf');
 const { Composer } = require('micro-bot')
-//import { Composer } from "micro-bot"
 
 //const bot = new Telegraf(BOT_TOKEN);
 const bot = new Composer
@@ -189,4 +188,4 @@ bot.action("reset", (ctx) =>{
 })
 
 //bot.launch()
-export { bot }
+module.exports = bot
