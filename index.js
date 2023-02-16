@@ -34,19 +34,19 @@ bot.command('start', async (ctx) => {
     ctx.telegram.sendMessage(ctx.chat.id, `
     Hi, *${ctx.update.message.from.username ? ctx.update.message.from.username : "User"}*!
     
-    I'm an AI bot, powered by @AiArchiveERC.
-    Join in on archiving the AI mind.
+    I'm an AI bot, powered by @ArchiveAIERC.
+    Join us in archiving the AI mind.
     
     
-    aioverflow.app X CodeAI.
+    archiveai.app
     
     
     Commands:
     /commands - Display Code AI's commands.
-    /ask - Ask Code AI a programming related question.
-    /archive - Search content into Archive AI.
+    /ask - Ask AI a question.
+    /archive - Search content posted to our Archives.
     
-Please keep in mind this is a beta, so if you have any problem report to @AiArchiveERC
+Please keep in mind this is a beta, so if you have any problem report to @ArchiveAIERC
     `,{
         parse_mode: "Markdown"
     })
@@ -55,8 +55,8 @@ Please keep in mind this is a beta, so if you have any problem report to @AiArch
 bot.command('commands', async (ctx) => {
     ctx.telegram.sendMessage(ctx.chat.id, `
 Commands:\n
-*/archive* - _Fetch data into the ArchAI database using a question._
-*/ask* - _Ask ArchAI a question._
+*/archive* - _Fetch data into the ArcAI database using a question._
+*/ask* - _Ask ArcAI a question._
         `,
         {
             parse_mode: "Markdown"
@@ -91,7 +91,7 @@ bot.command('ask', async (ctx) => {
 
                 ctx.telegram.sendMessage(
                     chatID, 
-                    `${answer}\n\n[ArchAI](https://AiArchive.io) | [Chart](${dexToolsLink}) | [Buy](${uniswapLink})`,
+                    `${answer}\n\n[ArcAI](https://AiArchive.io) | [Chart](${dexToolsLink}) | [Buy](${uniswapLink})`,
                     { 
                         parse_mode: "Markdown", 
                         disable_web_page_preview: true,
@@ -100,12 +100,12 @@ bot.command('ask', async (ctx) => {
                             inline_keyboard:[
                                 [
                                     {
-                                        text: "✅ Push",
-                                        callback_data: "push_data"
+                                        text: "❗",
+                                        callback_data: "reset"
                                     },
                                     {
-                                        text: "❗ Don't",
-                                        callback_data: "reset"
+                                        text: "✅",
+                                        callback_data: "push_data" 
                                     }
                                 ]
                             ]
