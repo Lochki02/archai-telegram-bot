@@ -1,14 +1,15 @@
 require('dotenv').config();
 //const { Telegraf } = require('telegraf');
 const { Composer } = require('micro-bot')
-const fetch = (url, method, body) => import('node-fetch').then(({default: fetch}) => fetch(url, {
+const fetchPost = (url, method, body) => import('node-fetch').then(({default: fetch}) => fetch(url, {
     method: method,
     headers: {
         'Content-Type': 'application/json'
     },
     body: JSON.stringify(body)
 }));
-const { BOT_TOKEN } = process.env
+const fetchGet = (url) => import('node-fetch').then(({default: fetch}) => fetch(url))
+const { BOT_TOKEN, API_URL } = process.env
 //const bot = new Telegraf(BOT_TOKEN);
 const bot = new Composer
 const dexToolsLink = "https://www.dextools.io/app/en/ether/pair-explorer/0x94ce5a0677e32584a672fa28a6dcb63b53b8196f"
@@ -73,7 +74,7 @@ bot.command('ask', async (ctx) => {
         const question = ctx.message.text.substring(5);
 
         if(question != "") {
-            let req = await fetch(`https://archai-api.vercel.app/user/chatgpt`, "POST",{
+            let req = await fetchPost(`${API_URL}/user/chatgpt`, "POST",{
                 question: question
             })
 
@@ -129,7 +130,7 @@ bot.command('archive', async (ctx) => {
     try{
         const question = ctx.message.text.substring(5);
 
-        let req = await fetch(`https://archai-api.vercel.app/user/search`, "POST", {
+        let req = await fetchPost(`${API_URL}/user/search`, "POST", {
             question: question
         })
         
@@ -155,6 +156,19 @@ bot.command('archive', async (ctx) => {
     }
 });
 
+bot.command("price" , async(ctx) =>{
+    const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Fetching ETH price...")
+
+    let req = await fetchGet(`https://api.etherscan.io/api?module=stats&action=ethprice&apikey=YourApiKeyToken`)
+
+    let res = await req.json()
+
+    if(res.status && String(res.status) == "1") ctx.telegram.sendMessage(ctx.chat.id, res.result.ethusd)
+    else ctx.telegram.sendMessage(ctx.chat.id, res.message)
+
+    ctx.telegram.deleteMessage(tempMsg.message_id)
+})
+
 bot.action("push_data", async(ctx) =>{
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Processing your push...")
     let filteredAnswers = tempArray.filter((obj) => obj.user == ctx.from.id)
@@ -162,7 +176,7 @@ bot.action("push_data", async(ctx) =>{
     tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
     
     if(tempObj){
-        let req = await fetch(`https://archai-api.vercel.app/user/request`, "POST", {
+        let req = await fetchPost(`${API_URL}/user/request`, "POST", {
             question: tempObj.question,
             answer: tempObj.answer,
             username: tempObj.username
@@ -185,7 +199,7 @@ bot.action("reset", async(ctx) =>{
     if(tempObj){
 
         try{
-            let req = await fetch(`https://archai-api.vercel.app/user/reject`, "POST", {
+            let req = await fetchPost(`${API_URL}/user/reject`, "POST", {
                 question: tempObj.question,
                 answer: tempObj.answer,
                 username: tempObj.username
