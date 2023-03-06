@@ -1,6 +1,6 @@
 require('dotenv').config();
-//const { Telegraf } = require('telegraf');
-const { Composer } = require('micro-bot')
+const { Telegraf } = require('telegraf');
+//const { Composer } = require('micro-bot')
 const fetchPost = (url, method, body) => import('node-fetch').then(({default: fetch}) => fetch(url, {
     method: method,
     headers: {
@@ -10,8 +10,8 @@ const fetchPost = (url, method, body) => import('node-fetch').then(({default: fe
 }));
 const fetchGet = (url) => import('node-fetch').then(({default: fetch}) => fetch(url))
 const { BOT_TOKEN, API_URL } = process.env
-//const bot = new Telegraf(BOT_TOKEN);
-const bot = new Composer
+const bot = new Telegraf(BOT_TOKEN);
+//const bot = new Composer
 const dexToolsLink = "https://www.dextools.io/app/en/ether/pair-explorer/0x94ce5a0677e32584a672fa28a6dcb63b53b8196f"
 const uniswapLink = "https://app.uniswap.org/#/swap?inputCurrency=0x5c8190b76e90b4dd0702740cf6eb0f7ee01ab5e9&outputCurrency=ETH"
 
@@ -184,11 +184,21 @@ bot.action("push_data", async(ctx) =>{
         let res = await req.json()
 
         if(res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
-        else ctx.telegram.sendMessage(ctx.chat.id, "Push was successful and will be reviewed by admins")
+        else{
+            ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+            ctx.telegram.sendMessage(ctx.chat.id, "Push was successful and will be reviewed by admins")
+
+            let req = await fetchPost(`${API_URL}/user/ticket/assign`, "POST", {
+                user_id: ctx.from.id,
+                tg_user: ctx.from.username
+            })
+            let res = await req.json()
+
+            if(!res.failed) ctx.telegram.sendMessage(ctx.from.id, "Congratulation, you've been assigned ticket #" + res.ticket.ticket_id + " for campaign " + res.ticket.campaign)
+            else ctx.telegram.sendMessage(ctx.from.id, res.error)
+        }
     }
     else ctx.telegram.sendMessage(ctx.chat.id, "This push has expired")
-
-    ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
 })
 
 bot.action("reset", async(ctx) =>{
@@ -214,5 +224,5 @@ bot.action("reset", async(ctx) =>{
     else console.log("Temp obj is having troubles")
 })
 
-//bot.launch()
-module.exports = bot
+bot.launch()
+//module.exports = bot
