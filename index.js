@@ -9,27 +9,13 @@ const fetchPost = (url, method, body) => import('node-fetch').then(({ default: f
     body: JSON.stringify(body)
 }));
 const fetchGet = (url) => import('node-fetch').then(({ default: fetch }) => fetch(url))
+const getAtlasClient = require("./mongodb-config")
+const ObjectId = require("mongodb").ObjectId
 const { BOT_TOKEN, API_URL } = process.env
 //const bot = new Telegraf(BOT_TOKEN);
 const bot = new Composer
 const dexToolsLink = "https://www.dextools.io/app/en/ether/pair-explorer/0x94ce5a0677e32584a672fa28a6dcb63b53b8196f"
 const uniswapLink = "https://app.uniswap.org/#/swap?inputCurrency=0x5c8190b76e90b4dd0702740cf6eb0f7ee01ab5e9&outputCurrency=ETH"
-
-class TemporaryObject {
-    question = ""
-    answer = ""
-    username = ""
-    user = 0
-
-    constructor(question, answer, username, user) {
-        this.question = question
-        this.answer = answer
-        this.username = username
-        this.user = user
-    }
-}
-
-let tempArray = []
 
 bot.command('start', async (ctx) => {
     ctx.telegram.sendMessage(ctx.chat.id, `
@@ -85,12 +71,9 @@ bot.command('ask', async (ctx) => {
             }
             else {
                 ctx.telegram.deleteMessage(chatID, tempReply.message_id)
-                let tempObj = new TemporaryObject(question, answer, ctx.from.username, ctx.from.id)
+                const client = await getAtlasClient()
 
-                tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
-                tempArray.push(tempObj)
-
-                ctx.telegram.sendMessage(
+                const msg = await ctx.telegram.sendMessage(
                     chatID,
                     `${answer}\n\n[ArcAI](https://AiArchive.io) | [Chart](${dexToolsLink}) | [Buy](${uniswapLink})`,
                     {
@@ -113,6 +96,18 @@ bot.command('ask', async (ctx) => {
                         }
                     }
                 )
+
+                const result = await client.db("TgCache")
+                    .collection("answersCache")
+                    .insertOne({
+                        question: question,
+                        answer: answer,
+                        user: ctx.from.id,
+                        chat: chatID,
+                        msg_id: msg.message_id
+                    })
+
+                if (!result.acknowledged) ctx.telegram.sendMessage(chatID, "Something went wrong")
             }
         }
         else ctx.telegram.sendMessage(chatID, "Wrong usage => */ask <replace with your question>*", { parse_mode: "Markdown" })
@@ -171,42 +166,58 @@ bot.command("price", async (ctx) => {
 
 bot.action("push_data", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Processing your push...")
-    let filteredAnswers = tempArray.filter((obj) => obj.user == ctx.from.id)
-    let tempObj = filteredAnswers[filteredAnswers.length - 1];
-    tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
+    const client = await getAtlasClient()
 
-    if (tempObj) {
-        let req = await fetchPost(`${API_URL}/user/request`, "POST", {
-            question: tempObj.question,
-            answer: tempObj.answer,
-            username: tempObj.username
-        })
-        let res = await req.json()
+    let cacheMsg = await client.db("TgCache").collection("answersCache").findOne({
+        user: ctx.update.callback_query.from.id,
+        msg_id: ctx.update.callback_query.message.message_id,
+        chat: ctx.update.callback_query.message.chat.id
+    })
 
-        if (res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
-        else {
-            ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
-            ctx.telegram.sendMessage(ctx.chat.id, "Push was successful and will be reviewed by admins")
-
-            let req = await fetchPost(`${API_URL}/user/ticket/assign`, "POST", {
-                user_id: ctx.from.id,
-                tg_user: ctx.from.username
+    if (cacheMsg) {
+        try{
+            let req = await fetchPost(`${API_URL}/user/request`, "POST", {
+                question: cacheMsg.question,
+                answer: cacheMsg.answer,
+                username: ctx.update.callback_query.from.username
             })
             let res = await req.json()
 
-            if (!res.failed) ctx.telegram.sendMessage(ctx.from.id, "Congratulation, you've been assigned ticket #" + res.ticket.id + " for campaign " + res.ticket.campaign)
-            else ctx.telegram.sendMessage(ctx.from.id, res.error)
+            if (res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
+            else {
+                ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+                ctx.telegram.sendMessage(ctx.chat.id, "Push was successful and will be reviewed by admins")
+
+                const result = await client.db("TgCache").collection("answersCache").deleteOne({ _id: new ObjectId(cacheMsg._id) })
+                if (!result.acknowledged) console.log("ERRORE DELETE")
+
+                let req = await fetchPost(`${API_URL}/user/ticket/assign`, "POST", {
+                    user_id: ctx.from.id,
+                    tg_user: ctx.from.username
+                })
+                let res = await req.json()
+
+                if (!res.failed) ctx.telegram.sendMessage(ctx.from.id, "Congratulation, you've been assigned ticket #" + res.ticket.id + " for campaign " + res.ticket.campaign)
+                else ctx.telegram.sendMessage(ctx.from.id, res.error)
+            }
+        }
+        catch(err){
+            console.log("Sending obj is having troubles")
         }
     }
     else ctx.telegram.sendMessage(ctx.chat.id, "This push has expired")
 })
 
 bot.action("reset", async (ctx) => {
-    let filteredAnswers = tempArray.filter((obj) => obj.user == ctx.from.id)
-    let tempObj = filteredAnswers[filteredAnswers.length - 1];
-    tempArray = tempArray.filter((obj) => obj.user != ctx.from.id)
+    const client = await getAtlasClient()
 
-    if (tempObj) {
+    let cacheMsg = await client.db("TgCache").collection("answersCache").findOne({
+        user: ctx.update.callback_query.from.id,
+        msg_id: ctx.update.callback_query.message.message_id,
+        chat: ctx.update.callback_query.message.chat.id
+    })
+
+    if (cacheMsg) {
 
         try {
             let req = await fetchPost(`${API_URL}/user/reject`, "POST", {
@@ -218,6 +229,9 @@ bot.action("reset", async (ctx) => {
 
             if (res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
             else {
+                const result = await client.db("TgCache").collection("answersCache").deleteOne({ _id: new ObjectId(cacheMsg._id) })
+                if (!result.acknowledged) console.log("ERRORE DELETE")
+                
                 let req = await fetchPost(`${API_URL}/user/ticket/assign`, "POST", {
                     user_id: ctx.from.id,
                     tg_user: ctx.from.username
@@ -231,7 +245,7 @@ bot.action("reset", async (ctx) => {
             console.log("Sending obj is having troubles")
         }
     }
-    else console.log("Temp obj is having troubles")
+    else console.log("Cache is having troubles")
 })
 
 //bot.launch()
