@@ -155,7 +155,7 @@ bot.command('archive', async (ctx) => {
     }
 });
 
-bot.command("price", async (ctx) => {
+bot.command("ethprice", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Fetching ETH price...")
 
     let req = await fetchGet(`https://api.etherscan.io/api?module=stats&action=ethprice`)
