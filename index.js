@@ -47,7 +47,7 @@ Commands:\n
 */remainingTickets* - _Get number of remaining tickets for current campaign_
 */leaderboard* - _Get leaderboard of current campaign_
 */campaign* - _Get info of current campaign_
-*/price* - _Fetch current ETH price in USD_
+*/ethprice* - _Fetch current ETH price in USD_
         `,
         {
             parse_mode: "Markdown"
