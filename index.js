@@ -328,7 +328,7 @@ bot.action("push_data", async (ctx) => {
                 })
                 let res = await req.json()
 
-                if (!res.failed) ctx.telegram.sendMessage(ctx.from.id, "Congratulation, you've been assigned ticket #" + res.ticket.id + " for campaign " + res.ticket.campaign)
+                if (!res.failed) ctx.telegram.sendMessage(ctx.chat.id, "Congratulation, you've been assigned ticket #" + res.ticket.id + " for campaign " + res.ticket.campaign)
                 else ctx.telegram.sendMessage(ctx.from.id, res.error)
             }
         }
