@@ -1,6 +1,6 @@
 require('dotenv').config();
-//const { Telegraf } = require('telegraf');
-const { Composer } = require('micro-bot')
+const { Telegraf } = require('telegraf');
+//const { Composer } = require('micro-bot')
 const fetchPost = (url, method, body) => import('node-fetch').then(({ default: fetch }) => fetch(url, {
     method: method,
     headers: {
@@ -12,8 +12,8 @@ const fetchGet = (url) => import('node-fetch').then(({ default: fetch }) => fetc
 const getAtlasClient = require("./mongodb-config")
 const ObjectId = require("mongodb").ObjectId
 const { BOT_TOKEN, API_URL } = process.env
-//const bot = new Telegraf(BOT_TOKEN);
-const bot = new Composer
+const bot = new Telegraf(BOT_TOKEN);
+//const bot = new Composer
 const dexToolsLink = "https://www.dextools.io/app/en/ether/pair-explorer/0x94ce5a0677e32584a672fa28a6dcb63b53b8196f"
 const uniswapLink = "https://app.uniswap.org/#/swap?inputCurrency=0x5c8190b76e90b4dd0702740cf6eb0f7ee01ab5e9&outputCurrency=ETH"
 
@@ -57,17 +57,16 @@ Commands:\n
 
 bot.command('ask', async (ctx) => {
     const chatID = ctx.chat.id
+    const tempReply = await ctx.telegram.sendMessage(chatID, "Processing your question...")
 
     try {
-        const tempReply = await ctx.telegram.sendMessage(chatID, "Processing your question...")
-
         const question = ctx.message.text.substring(5);
 
         if (question != "") {
             let req = await fetchPost(`${API_URL}/user/chatgpt`, "POST", {
                 question: question
             })
-
+            if(req.status >= 400) throw req.statusText
             let res = await req.json()
             const answer = res.result
             if (!answer) {
@@ -118,7 +117,8 @@ bot.command('ask', async (ctx) => {
     }
     catch (err) {
         console.log(err)
-        ctx.telegram.sendMessage(chatID, "Something went wrong")
+        ctx.telegram.deleteMessage(chatID, tempReply.message_id)
+        ctx.telegram.sendMessage(chatID, typeof(err) == "string" ? err : "Unexpected error")
     }
 });
 
@@ -132,7 +132,7 @@ bot.command('archive', async (ctx) => {
         let req = await fetchPost(`${API_URL}/user/search`, "POST", {
             question: question
         })
-
+        if(req.status >= 400) throw req.statusText
         let res = await req.json()
 
         let data = res.result
@@ -151,147 +151,176 @@ bot.command('archive', async (ctx) => {
     }
     catch (err) {
         console.log(err)
-        ctx.telegram.sendMessage(chatID, "Something went wrong")
+        ctx.telegram.deleteMessage(chatID, tempReply.message_id)
+        ctx.telegram.sendMessage(chatID, typeof(err) == "string" ? err : "Something went wrong")
     }
 });
 
 bot.command("ethprice", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Fetching ETH price...")
+    try{
+        let req = await fetchGet(`https://api.etherscan.io/api?module=stats&action=ethprice`)
+        let res = await req.json()
 
-    let req = await fetchGet(`https://api.etherscan.io/api?module=stats&action=ethprice`)
+        if (res.status && String(res.status) == "1") ctx.telegram.sendMessage(ctx.chat.id, "The current ETH price is " + res.result.ethusd + "$")
+        else ctx.telegram.sendMessage(ctx.chat.id, res.message)
 
-    let res = await req.json()
-
-    if (res.status && String(res.status) == "1") ctx.telegram.sendMessage(ctx.chat.id, "The current ETH price is " + res.result.ethusd + "$")
-    else ctx.telegram.sendMessage(ctx.chat.id, res.message)
-
-    ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+        ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+    }
+    catch(err){
+        console.log(err)
+        ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+        ctx.telegram.sendMessage(chatID, "Unexpected error")
+    }
 })
 
 bot.command("remainingTickets", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Fetching remaining tickets...")
 
-    let req = await fetchGet(`${API_URL}/user/campaigns`)
-    let res = await req.json()
+    try{
+        let req = await fetchGet(`${API_URL}/user/campaigns`)
+        if(req.status >= 400) throw req.statusText
+        let res = await req.json()
 
-    const campaign = res.campaign
+        const campaign = res.campaign
 
-    if (campaign) {
-        if (campaign.active) {
-            let req = await fetchGet(`${API_URL}/user/tickets/${campaign.id}`)
-            let res = await req.json()
-            const tickets = res.tickets
+        if (campaign) {
+            if (campaign.active) {
+                let req = await fetchGet(`${API_URL}/user/tickets/${campaign.id}`)
+                if(req.status >= 400) throw req.statusText
+                let res = await req.json()
+                const tickets = res.tickets
 
-            if (tickets) {
-                const num = campaign.tickets - tickets.length
+                if (tickets) {
+                    const num = campaign.tickets - tickets.length
 
-                ctx.telegram.sendMessage(ctx.chat.id, "There are " + num + " tickets available for campaign " + campaign.name)
-                ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+                    ctx.telegram.sendMessage(ctx.chat.id, "There are " + num + " tickets available for campaign " + campaign.name)
+                    ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+                }
+                else {
+                    ctx.telegram.sendMessage(ctx.chat.id, "Something went wrong")
+                    ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+                }
             }
             else {
-                ctx.telegram.sendMessage(ctx.chat.id, "Something went wrong")
+                ctx.telegram.sendMessage(ctx.chat.id, campaign.name + " campaign is not active")
                 ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
             }
         }
         else {
-            ctx.telegram.sendMessage(ctx.chat.id, campaign.name + " campaign is not active")
+            ctx.telegram.sendMessage(ctx.chat.id, "The campaign does not exist")
             ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
         }
     }
-    else {
-        ctx.telegram.sendMessage(ctx.chat.id, "The campaign does not exist")
+    catch(err){
+        console.log(err)
         ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+        ctx.telegram.sendMessage(chatID, typeof(err) == "string" ? err : "Unexpected error")
     }
 })
 
 bot.command("leaderboard", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Constructing leaderboard...")
+    try {
+        let req = await fetchGet(`${API_URL}/user/campaigns`)
+        if(req.status >= 400) throw req.statusText
+        let res = await req.json()
 
-    let req = await fetchGet(`${API_URL}/user/campaigns`)
-    let res = await req.json()
+        const campaign = res.campaign
 
-    const campaign = res.campaign
+        if (campaign) {
+            if (campaign.active) {
+                let req = await fetchGet(`${API_URL}/user/tickets/${campaign.id}`)
+                if(req.status >= 400) throw req.statusText
+                let res = await req.json()
+                const tickets = res.tickets
 
-    if (campaign) {
-        if (campaign.active) {
-            let req = await fetchGet(`${API_URL}/user/tickets/${campaign.id}`)
-            let res = await req.json()
-            const tickets = res.tickets
+                if (tickets) {
+                    if (tickets.length != 0) {
+                        let compoundedTickets = []
+                        let remainingTickets = tickets
 
-            if (tickets) {
-                if (tickets.length != 0) {
-                    let compoundedTickets = []
-                    let remainingTickets = tickets
+                        do {
+                            let ticket = remainingTickets[0]
+                            let id = ticket.tg_id ? ticket.tg_id : ticket.user_id
 
-                    for (let i = 0; i < tickets.length; i++) {
-                        let ticket = tickets[i]
-                        let id = ticket.tg_id ? ticket.tg_id : ticket.user_id
+                            let filterUserTickets = remainingTickets.filter((tick) => tick.user_id == id || tick.tg_id == id)
+                            let deleteUserTickets = remainingTickets.filter((tick) => tick.user_id != id && tick.tg_id != id)
+                            remainingTickets = deleteUserTickets
 
-                        let filterUserTickets = remainingTickets.filter((tick) => tick.user_id == id || tick.tg_id == id)
-                        let deleteUserTickets = remainingTickets.filter((tick) => tick.user_id != id && tick.tg_id != id)
-                        remainingTickets = deleteUserTickets
+                            compoundedTickets.push({
+                                id: id,
+                                username: ticket.tg_id ? ticket.tg_username : ticket.username,
+                                tickets: filterUserTickets.length,
+                                timestamp: filterUserTickets[filterUserTickets.length - 1].timestamp
+                            })
+                        } while (remainingTickets.length != 0)
 
-                        compoundedTickets.push({
-                            id: id,
-                            username: ticket.tg_id ? ticket.tg_username : ticket.username,
-                            tickets: filterUserTickets.length,
-                            timestamp: filterUserTickets[filterUserTickets.length - 1].timestamp
+                        compoundedTickets.sort((a, b) => {
+                            if (a.tickets > b.tickets) return -1
+                            else if (a.tickets < b.tickets) return 1
+                            else {
+                                if (a.timestamp >= b.timestamp) return 1
+                                else return -1
+                            }
                         })
 
-                        if (remainingTickets.length == 0) break
+                        ctx.telegram.sendMessage(ctx.chat.id, `*Leaderboard ${campaign.name}* \n\n🥇- *${compoundedTickets[0].username + " (" + compoundedTickets[0].tickets + ")"}* \n🥈- *${compoundedTickets[1] ? compoundedTickets[1].username + " (" + compoundedTickets[1].tickets + ")" : "---"}* \n🥉- *${compoundedTickets[2] ? compoundedTickets[2].username + " (" + compoundedTickets[2].tickets + ")" : "---"}*`, {
+                            parse_mode: "Markdown"
+                        })
                     }
-
-                    compoundedTickets.sort((a, b) => {
-                        if (a.tickets < b.tickets) return -1
-                        else if (a.tickets > b.tickets) return 1
-                        else {
-                            if (a.timestamp >= b.timestamp) return 1
-                            else return -1
-                        }
-                    })
-
-                    ctx.telegram.sendMessage(ctx.chat.id, `*Leaderboard ${campaign.name}* \n\n🥇- *${compoundedTickets[0].username + " (" + compoundedTickets[0].tickets + ")"}* \n🥈- *${compoundedTickets[1] ? compoundedTickets[1].username + " (" + compoundedTickets[1].tickets + ")" : "---"}* \n🥉- *${compoundedTickets[2] ? compoundedTickets[2].username + " (" + compoundedTickets[2].tickets + ")" : "---"}*`, {
-                        parse_mode: "Markdown"
-                    })
+                    else {
+                        ctx.telegram.sendMessage(ctx.chat.id, "Tickets have not been distributed yet")
+                        ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+                    }
                 }
                 else {
-                    ctx.telegram.sendMessage(ctx.chat.id, "Tickets have not been distributed yet")
+                    ctx.telegram.sendMessage(ctx.chat.id, "Something went wrong")
                     ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
                 }
             }
             else {
-                ctx.telegram.sendMessage(ctx.chat.id, "Something went wrong")
+                ctx.telegram.sendMessage(ctx.chat.id, campaign.name + " campaign is not active")
                 ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
             }
         }
         else {
-            ctx.telegram.sendMessage(ctx.chat.id, campaign.name + " campaign is not active")
+            ctx.telegram.sendMessage(ctx.chat.id, "The campaign does not exist")
             ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
         }
     }
-    else {
-        ctx.telegram.sendMessage(ctx.chat.id, "The campaign does not exist")
+    catch (err) {
+        console.log(err)
         ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+        ctx.telegram.sendMessage(ctx.chat.id, typeof(err) == "string" ? err : "Unexpected error")
     }
 })
 
-bot.command("campaign", async(ctx) =>{
+bot.command("campaign", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Fetching infos...")
 
-    let req = await fetchGet(`${API_URL}/user/campaigns`)
-    let res = await req.json()
+    try{
+        let req = await fetchGet(`${API_URL}/user/campaigns`)
+        if(req.status >= 400) throw req.statusText
+        let res = await req.json()
 
-    const campaign = res.campaign
+        const campaign = res.campaign
 
-    if(campaign){
-        ctx.telegram.sendMessage(ctx.chat.id, `Info campaign ${campaign.name}\n\n🎟️*Tickets:* ${campaign.tickets}\n⛔*Active:* ${campaign.active ? "Yes" : "No"}\n🍧*Tickets Limit:* ${campaign.max_tickets}\n🏆*Winner slots:* ${campaign.num_winners}\n💰*Reward:* ${campaign.reward}`, {
-            parse_mode: "Markdown"
-        })
-        ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+        if (campaign) {
+            ctx.telegram.sendMessage(ctx.chat.id, `Info campaign ${campaign.name}\n\n🎟️*Tickets:* ${campaign.tickets}\n⛔*Active:* ${campaign.active ? "Yes" : "No"}\n🍧*Tickets Limit:* ${campaign.max_tickets}\n🏆*Winner slots:* ${campaign.num_winners}\n💰*Reward:* ${campaign.reward}`, {
+                parse_mode: "Markdown"
+            })
+            ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+        }
+        else {
+            ctx.telegram.sendMessage(ctx.chat.id, "The campaign does not exist")
+            ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+        }
     }
-    else {
-        ctx.telegram.sendMessage(ctx.chat.id, "The campaign does not exist")
+    catch(err){
+        console.log(err)
         ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+        ctx.telegram.sendMessage(ctx.chat.id, typeof(err) == "string" ? err : "Unexpected error")
     }
 })
 
@@ -312,6 +341,7 @@ bot.action("push_data", async (ctx) => {
                 answer: cacheMsg.answer,
                 username: ctx.update.callback_query.from.username
             })
+            if(req.status >= 400) throw req.statusText
             let res = await req.json()
 
             if (res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
@@ -326,6 +356,7 @@ bot.action("push_data", async (ctx) => {
                     user_id: ctx.from.id,
                     tg_user: ctx.from.username
                 })
+                if(req.status >= 400) throw req.statusText
                 let res = await req.json()
 
                 if (!res.failed) ctx.telegram.sendMessage(ctx.chat.id, "Congratulation, you've been assigned ticket #" + res.ticket.id + " for campaign " + res.ticket.campaign)
@@ -334,12 +365,15 @@ bot.action("push_data", async (ctx) => {
         }
         catch (err) {
             console.log("Sending obj is having troubles")
+            ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+            ctx.telegram.sendMessage(ctx.chat.id, typeof(err) == "string" ? err : "Unexpected error")
         }
     }
     else ctx.telegram.sendMessage(ctx.chat.id, "This push has expired")
 })
 
 bot.action("reset", async (ctx) => {
+    const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Processing your push...")
     const client = await getAtlasClient()
 
     let cacheMsg = await client.db("TgCache").collection("answersCache").findOne({
@@ -349,17 +383,19 @@ bot.action("reset", async (ctx) => {
     })
 
     if (cacheMsg) {
-
         try {
             let req = await fetchPost(`${API_URL}/user/reject`, "POST", {
                 question: tempObj.question,
                 answer: tempObj.answer,
                 username: tempObj.username
             })
+            if(req.status >= 400) throw req.statusText
             let res = await req.json()
 
             if (res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
             else {
+                ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+                ctx.telegram.sendMessage(ctx.chat.id, "Push was successful and will be reviewed by admins")
                 const result = await client.db("TgCache").collection("answersCache").deleteOne({ _id: new ObjectId(cacheMsg._id) })
                 if (!result.acknowledged) console.log("ERRORE DELETE")
 
@@ -367,6 +403,7 @@ bot.action("reset", async (ctx) => {
                     user_id: ctx.from.id,
                     tg_user: ctx.from.username
                 })
+                if(req.status >= 400) throw req.statusText
                 let res = await req.json()
 
                 if (!res.failed) ctx.telegram.sendMessage(ctx.from.id, "Congratulation, you've been assigned ticket #" + res.ticket.ticket_id + " for campaign " + res.ticket.campaign)
@@ -374,10 +411,12 @@ bot.action("reset", async (ctx) => {
             }
         } catch (err) {
             console.log("Sending obj is having troubles")
+            ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
+            ctx.telegram.sendMessage(ctx.chat.id, typeof(err) == "string" ? err : "Unexpected error")
         }
     }
     else console.log("Cache is having troubles")
 })
 
-//bot.launch()
-module.exports = bot
+bot.launch()
+//module.exports = bot
