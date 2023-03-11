@@ -2,5 +2,5 @@
     "watch": [""],
     "ext": ".js",
     "ignore": [],
-    "exec": "micro-bot"
+    "exec": "node ./index.js"
 }
