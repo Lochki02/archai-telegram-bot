@@ -117,6 +117,7 @@ bot.command('ask', async (ctx) => {
                     }
                 })
                 .catch((err) =>{
+                    ctx.telegram.sendMessage(chatID, "Coundn't answer back")
                     console.log(err)
                 })
 
