@@ -418,8 +418,8 @@ bot.action("reset", async (ctx) => {
     else console.log("Cache is having troubles")
 })
 
-bot.catch((ctx) =>{
-    console.log("errore")
+bot.catch((err, ctx) =>{
+    console.log(err)
 })
 
 //bot.launch()
