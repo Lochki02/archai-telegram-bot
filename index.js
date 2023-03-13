@@ -1,6 +1,6 @@
 require('dotenv').config();
-//const { Telegraf } = require('telegraf');
-const { Telegraf } = require('micro-bot')
+const { Telegraf } = require('telegraf');
+//const { Telegraf } = require('micro-bot')
 const fetchPost = (url, method, body) => import('node-fetch').then(({ default: fetch }) => fetch(url, {
     method: method,
     headers: {
@@ -422,10 +422,5 @@ bot.catch((err, ctx) => {
     console.log(err)
 })
 
-bot.on('TelegramError', (err, ctx) => {
-    console.log(`A Telegram error occurred: ${err.description}`)
-    // Handle the error as appropriate, such as sending an error message to the user
-})
-
-//bot.launch()
-module.exports = bot
+bot.launch()
+//module.exports = bot
