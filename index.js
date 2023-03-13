@@ -13,7 +13,7 @@ const getAtlasClient = require("./mongodb-config")
 const ObjectId = require("mongodb").ObjectId
 const { BOT_TOKEN, API_URL } = process.env
 //const bot = new Telegraf(BOT_TOKEN);
-const bot = new Telegraf
+const bot = new Telegraf(BOT_TOKEN)
 const dexToolsLink = "https://www.dextools.io/app/en/ether/pair-explorer/0x94ce5a0677e32584a672fa28a6dcb63b53b8196f"
 const uniswapLink = "https://app.uniswap.org/#/swap?inputCurrency=0x5c8190b76e90b4dd0702740cf6eb0f7ee01ab5e9&outputCurrency=ETH"
 
