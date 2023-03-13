@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Telegraf } = require('telegraf');
+const { Telegraf, TelegramError } = require('telegraf');
 //const { Telegraf } = require('micro-bot')
 const fetchPost = (url, method, body) => import('node-fetch').then(({ default: fetch }) => fetch(url, {
     method: method,
@@ -418,8 +418,8 @@ bot.action("reset", async (ctx) => {
     else console.log("Cache is having troubles")
 })
 
-bot.catch((err, ctx) => {
-    console.log(err)
+bot.on("TelegramError", (err, ctx) =>{
+    console.log("ERRORE CATCHATO")
 })
 
 bot.launch()
