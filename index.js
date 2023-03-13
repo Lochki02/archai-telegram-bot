@@ -66,7 +66,7 @@ bot.command('ask', async (ctx) => {
             let req = await fetchPost(`${API_URL}/user/chatgpt`, "POST", {
                 question: question
             })
-            if(req.status >= 400) throw req.statusText
+            if (req.status >= 400) throw req.statusText
             let res = await req.json()
             const answer = res.result
             if (!answer) {
@@ -118,7 +118,7 @@ bot.command('ask', async (ctx) => {
     catch (err) {
         console.log(err)
         ctx.telegram.deleteMessage(chatID, tempReply.message_id)
-        ctx.telegram.sendMessage(chatID, typeof(err) == "string" ? err : "Unexpected error")
+        ctx.telegram.sendMessage(chatID, typeof (err) == "string" ? err : "Unexpected error")
     }
 });
 
@@ -132,7 +132,7 @@ bot.command('archive', async (ctx) => {
         let req = await fetchPost(`${API_URL}/user/search`, "POST", {
             question: question
         })
-        if(req.status >= 400) throw req.statusText
+        if (req.status >= 400) throw req.statusText
         let res = await req.json()
 
         let data = res.result
@@ -152,13 +152,13 @@ bot.command('archive', async (ctx) => {
     catch (err) {
         console.log(err)
         ctx.telegram.deleteMessage(chatID, tempReply.message_id)
-        ctx.telegram.sendMessage(chatID, typeof(err) == "string" ? err : "Something went wrong")
+        ctx.telegram.sendMessage(chatID, typeof (err) == "string" ? err : "Something went wrong")
     }
 });
 
 bot.command("ethprice", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Fetching ETH price...")
-    try{
+    try {
         let req = await fetchGet(`https://api.etherscan.io/api?module=stats&action=ethprice`)
         let res = await req.json()
 
@@ -167,7 +167,7 @@ bot.command("ethprice", async (ctx) => {
 
         ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
     }
-    catch(err){
+    catch (err) {
         console.log(err)
         ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
         ctx.telegram.sendMessage(chatID, "Unexpected error")
@@ -177,9 +177,9 @@ bot.command("ethprice", async (ctx) => {
 bot.command("remainingTickets", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Fetching remaining tickets...")
 
-    try{
+    try {
         let req = await fetchGet(`${API_URL}/user/campaigns`)
-        if(req.status >= 400) throw req.statusText
+        if (req.status >= 400) throw req.statusText
         let res = await req.json()
 
         const campaign = res.campaign
@@ -187,7 +187,7 @@ bot.command("remainingTickets", async (ctx) => {
         if (campaign) {
             if (campaign.active) {
                 let req = await fetchGet(`${API_URL}/user/tickets/${campaign.id}`)
-                if(req.status >= 400) throw req.statusText
+                if (req.status >= 400) throw req.statusText
                 let res = await req.json()
                 const tickets = res.tickets
 
@@ -212,10 +212,10 @@ bot.command("remainingTickets", async (ctx) => {
             ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
         }
     }
-    catch(err){
+    catch (err) {
         console.log(err)
         ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
-        ctx.telegram.sendMessage(chatID, typeof(err) == "string" ? err : "Unexpected error")
+        ctx.telegram.sendMessage(chatID, typeof (err) == "string" ? err : "Unexpected error")
     }
 })
 
@@ -223,7 +223,7 @@ bot.command("leaderboard", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Constructing leaderboard...")
     try {
         let req = await fetchGet(`${API_URL}/user/campaigns`)
-        if(req.status >= 400) throw req.statusText
+        if (req.status >= 400) throw req.statusText
         let res = await req.json()
 
         const campaign = res.campaign
@@ -231,7 +231,7 @@ bot.command("leaderboard", async (ctx) => {
         if (campaign) {
             if (campaign.active) {
                 let req = await fetchGet(`${API_URL}/user/tickets/${campaign.id}`)
-                if(req.status >= 400) throw req.statusText
+                if (req.status >= 400) throw req.statusText
                 let res = await req.json()
                 const tickets = res.tickets
 
@@ -292,16 +292,16 @@ bot.command("leaderboard", async (ctx) => {
     catch (err) {
         console.log(err)
         ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
-        ctx.telegram.sendMessage(ctx.chat.id, typeof(err) == "string" ? err : "Unexpected error")
+        ctx.telegram.sendMessage(ctx.chat.id, typeof (err) == "string" ? err : "Unexpected error")
     }
 })
 
 bot.command("campaign", async (ctx) => {
     const tempMsg = await ctx.telegram.sendMessage(ctx.chat.id, "Fetching infos...")
 
-    try{
+    try {
         let req = await fetchGet(`${API_URL}/user/campaigns`)
-        if(req.status >= 400) throw req.statusText
+        if (req.status >= 400) throw req.statusText
         let res = await req.json()
 
         const campaign = res.campaign
@@ -317,10 +317,10 @@ bot.command("campaign", async (ctx) => {
             ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
         }
     }
-    catch(err){
+    catch (err) {
         console.log(err)
         ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
-        ctx.telegram.sendMessage(ctx.chat.id, typeof(err) == "string" ? err : "Unexpected error")
+        ctx.telegram.sendMessage(ctx.chat.id, typeof (err) == "string" ? err : "Unexpected error")
     }
 })
 
@@ -341,7 +341,7 @@ bot.action("push_data", async (ctx) => {
                 answer: cacheMsg.answer,
                 username: ctx.update.callback_query.from.username
             })
-            if(req.status >= 400) throw req.statusText
+            if (req.status >= 400) throw req.statusText
             let res = await req.json()
 
             if (res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
@@ -356,7 +356,7 @@ bot.action("push_data", async (ctx) => {
                     user_id: ctx.from.id,
                     tg_user: ctx.from.username
                 })
-                if(req.status >= 400) throw req.statusText
+                if (req.status >= 400) throw req.statusText
                 let res = await req.json()
 
                 if (!res.failed) ctx.telegram.sendMessage(ctx.chat.id, "Congratulation, you've been assigned ticket #" + res.ticket.id + " for campaign " + res.ticket.campaign)
@@ -366,7 +366,7 @@ bot.action("push_data", async (ctx) => {
         catch (err) {
             console.log("Sending obj is having troubles")
             ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
-            ctx.telegram.sendMessage(ctx.chat.id, typeof(err) == "string" ? err : "Unexpected error")
+            ctx.telegram.sendMessage(ctx.chat.id, typeof (err) == "string" ? err : "Unexpected error")
         }
     }
     else ctx.telegram.sendMessage(ctx.chat.id, "This push has expired")
@@ -389,7 +389,7 @@ bot.action("reset", async (ctx) => {
                 answer: tempObj.answer,
                 username: tempObj.username
             })
-            if(req.status >= 400) throw req.statusText
+            if (req.status >= 400) throw req.statusText
             let res = await req.json()
 
             if (res.failed) ctx.telegram.sendMessage(ctx.chat.id, res.error)
@@ -403,7 +403,7 @@ bot.action("reset", async (ctx) => {
                     user_id: ctx.from.id,
                     tg_user: ctx.from.username
                 })
-                if(req.status >= 400) throw req.statusText
+                if (req.status >= 400) throw req.statusText
                 let res = await req.json()
 
                 if (!res.failed) ctx.telegram.sendMessage(ctx.from.id, "Congratulation, you've been assigned ticket #" + res.ticket.ticket_id + " for campaign " + res.ticket.campaign)
@@ -412,14 +412,19 @@ bot.action("reset", async (ctx) => {
         } catch (err) {
             console.log("Sending obj is having troubles")
             ctx.telegram.deleteMessage(ctx.chat.id, tempMsg.message_id)
-            ctx.telegram.sendMessage(ctx.chat.id, typeof(err) == "string" ? err : "Unexpected error")
+            ctx.telegram.sendMessage(ctx.chat.id, typeof (err) == "string" ? err : "Unexpected error")
         }
     }
     else console.log("Cache is having troubles")
 })
 
-bot.catch((err, ctx) =>{
+bot.catch((err, ctx) => {
     console.log(err)
+})
+
+bot.on('TelegramError', (err, ctx) => {
+    console.log(`A Telegram error occurred: ${err.description}`)
+    // Handle the error as appropriate, such as sending an error message to the user
 })
 
 //bot.launch()
