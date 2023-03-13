@@ -75,7 +75,7 @@ bot.command('ask', async (ctx) => {
             else {
                 const client = await getAtlasClient()
 
-                const msg = await ctx.telegram.sendMessage(
+                ctx.telegram.sendMessage(
                     chatID,
                     `${answer}\n\n[ArcAI](https://AiArchive.io) | [Chart](${dexToolsLink}) | [Buy](${uniswapLink})`,
                     {
@@ -98,18 +98,22 @@ bot.command('ask', async (ctx) => {
                         }
                     }
                 )
+                .then(async(fulfilled) => {
+                    const result = await client.db("TgCache")
+                        .collection("answersCache")
+                        .insertOne({
+                            question: question,
+                            answer: answer,
+                            user: ctx.from.id,
+                            chat: chatID,
+                            msg_id: fulfilled.message_id
+                        })
 
-                const result = await client.db("TgCache")
-                    .collection("answersCache")
-                    .insertOne({
-                        question: question,
-                        answer: answer,
-                        user: ctx.from.id,
-                        chat: chatID,
-                        msg_id: msg.message_id
-                    })
-
-                if (!result.acknowledged) ctx.telegram.sendMessage(chatID, "Something went wrong")
+                    if (!result.acknowledged) ctx.telegram.sendMessage(chatID, "Something went wrong")
+                })
+                .catch((err) =>{
+                    console.log(err)
+                })
 
                 ctx.telegram.deleteMessage(chatID, tempReply.message_id)
             }
@@ -417,10 +421,6 @@ bot.action("reset", async (ctx) => {
         }
     }
     else console.log("Cache is having troubles")
-})
-
-bot.on("TelegramError", (err, ctx) =>{
-    console.log("ERRORE CATCHATO")
 })
 
 bot.launch()
