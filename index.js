@@ -73,7 +73,6 @@ bot.command('ask', async (ctx) => {
                 ctx.telegram.sendMessage(chatID, "Something went wrong")
             }
             else {
-                ctx.telegram.deleteMessage(chatID, tempReply.message_id)
                 const client = await getAtlasClient()
 
                 const msg = await ctx.telegram.sendMessage(
@@ -111,6 +110,8 @@ bot.command('ask', async (ctx) => {
                     })
 
                 if (!result.acknowledged) ctx.telegram.sendMessage(chatID, "Something went wrong")
+
+                ctx.telegram.deleteMessage(chatID, tempReply.message_id)
             }
         }
         else ctx.telegram.sendMessage(chatID, "Wrong usage => */ask <replace with your question>*", { parse_mode: "Markdown" })
