@@ -99,17 +99,22 @@ bot.command('ask', async (ctx) => {
                     }
                 )
                 .then(async(fulfilled) => {
-                    const result = await client.db("TgCache")
-                        .collection("answersCache")
-                        .insertOne({
-                            question: question,
-                            answer: answer,
-                            user: ctx.from.id,
-                            chat: chatID,
-                            msg_id: fulfilled.message_id
-                        })
+                    try{
+                        const result = await client.db("TgCache")
+                            .collection("answersCache")
+                            .insertOne({
+                                question: question,
+                                answer: answer,
+                                user: ctx.from.id,
+                                chat: chatID,
+                                msg_id: fulfilled.message_id
+                            })
 
-                    if (!result.acknowledged) ctx.telegram.sendMessage(chatID, "Something went wrong")
+                        if (!result.acknowledged) ctx.telegram.sendMessage(chatID, "Something went wrong")
+                    }
+                    catch(err){
+                        console.log("Errore")
+                    }
                 })
                 .catch((err) =>{
                     console.log(err)
